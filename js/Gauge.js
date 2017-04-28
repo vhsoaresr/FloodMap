@@ -1,7 +1,8 @@
-(function() {
+(function () {
     window.Main = {};
-    Main.Page = (function() {
+    Main.Page = (function () {
         var mosq = null;
+        var urlBroker = "ws://iot.eclipse.org/ws";
 
         function Page() {
             var _this = this;
@@ -11,85 +12,32 @@
             config1.circleThickness = 0.1;
             config1.textVertPosition = 0.25;
             config1.waveAnimateTime = 3500;
-            var gauge1 = loadLiquidFillGauge("fillgauge1", 55, config1);
-            gauge1.update(5);
+            var gauge1 = loadLiquidFillGauge("fillgauge1", 0, config1);
 
             mosq = new Mosquitto();
 
-            return _this.connect();
+            _this.connect();
 
-            $('#subscribe-button').click(function() {
-                return _this.subscribe();
-            });
-            $('#unsubscribe-button').click(function() {
-                return _this.unsubscribe();
-            });
-
-
-            $('#liga-output').click(function() {
-                var payload = "L";
-                var TopicPublish = $('#pub-topic-text')[0].value;
-                mosq.publish(TopicPublish, payload, 0);
-
-                var TopicPublish = $('#pub-topic-text')[0].value;
-                var text1 = $('#text1')[0].value;
-                mosq.publish(TopicPublish, text1, 0);
-            });
-
-
-            $('#desliga-output').click(function() {
-                var payload = "D";
-                var TopicPublish = $('#pub-topic-text')[0].value;
-                mosq.publish(TopicPublish, payload, 0);
-            });
-
-            mosq.onconnect = function(rc) {
-                var p = document.createElement("p");
-                var topic = $('#pub-subscribe-text')[0].value;
-                p.innerHTML = "Conectado ao Broker!";
-                $("#debug").append(p);
-                mosq.subscribe(topic, 0);
-
+            mosq.ondisconnect = function (rc) {
+                console.info("A conexão com o broker foi perdida");
+                mosq.connect(urlBroker);
             };
-            mosq.ondisconnect = function(rc) {
-                var p = document.createElement("p");
-                var url = "ws://iot.eclipse.org/ws";
-
-                p.innerHTML = "A conexão com o broker foi perdida";
-                $("#debug").append(p);
-                mosq.connect(url);
-            };
-            mosq.onmessage = function(topic, payload, qos) {
-                var p = document.createElement("p");
-                var acao = payload[0];
-
-                //escreve o estado do output conforme informação recebida
-                if (acao == 'L')
-                    p.innerHTML = "<center><img src='ligado.png'></center>"
-                else
-                    p.innerHTML = "<center><img src='desligado.png'></center>"
-
-                $("#status_io").html(p);
-
-                console.debug("payload " + payload);
-
-                for (var i = 0; i < payload.length; i++) {
-                    console.debug("for " + payload[i].charCodeAt(0));
-                }
-
-                console.debug("direto " + payload.charCodeAt(0));
+            mosq.onmessage = function (topic, payload, qos) {
+                if (topic == "MQTTENVIALIMITE")
+                    gauge1.update(payload);
             };
         }
-        Page.prototype.connect = function() {
-            var url = "ws://iot.eclipse.org/ws";
-            mosq.connect(url);
-            var topic = "MQTTRECEBEFLOOD"
+        Page.prototype.connect = function () {
+            mosq.connect(urlBroker);
+            console.info("Conectado ao " + urlBroker);
+            var topic = "MQTTENVIALIMITE"
             mosq.subscribe(topic, 0);
+            console.log("Inscrito no topico " + topic);
         };
 
         return Page;
     })();
-    $(function() {
+    $(function () {
         return Main.controller = new Main.Page;
     });
 }).call(this);
