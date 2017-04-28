@@ -2,7 +2,7 @@
     window.Main = {};
     Main.Page = (function () {
         var mosq = null;
-        var urlBroker = "ws://iot.eclipse.org/ws";
+        var urlBroker = "wss://iot.eclipse.org/ws";
 
         function Page() {
             var _this = this;
